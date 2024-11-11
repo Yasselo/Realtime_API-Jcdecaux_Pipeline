@@ -21,8 +21,8 @@ All components run in Docker containers. Ensure Docker and Docker Compose are in
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
-   cd <repository-name>
+   git clone https://github.com/Yasselo/Realtime_jcdecaux_pipeline
+   cd Realtime_jcdecaux_pipeline
    ```
 
 2. **Build and Start Services**:
@@ -49,8 +49,10 @@ All components run in Docker containers. Ensure Docker and Docker Compose are in
    ```
 2. Start the pipeline:
    ```bash
-   docker exec -it bike_pipeline bash -c "exec ./start_pipeline.sh"
+   docker exec -it bike_pipeline bash
    ```
+Wait for the various services to initialize. Once they're running, enter the following commands in the bash:
+``` python3 producer & python3 consumer```
 3. **Kibana Access**: Open [http://localhost:5601](http://localhost:5601) to view Kibana and check Elasticsearch data under "Index Management".
 
 
