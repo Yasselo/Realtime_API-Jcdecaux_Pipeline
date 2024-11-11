@@ -2,7 +2,7 @@
 # 🚴‍♂️ _Jcdecaux Bike Real-time Data Pipeline with Docker_
 
 ### 📊 Overview
-This pipeline captures real-time bike station data from the Jcdecaux public API and processes it using Dockerized services for messaging, real-time processing, storage, and visualization. Kafka handles messaging, Spark Streaming processes data, Elasticsearch stores the information, and Kibana and Streamlit provide visualization.
+This pipeline captures real-time bike station data from the Jcdecaux public API and processes it using Dockerized services for messaging, real-time processing, storage, and visualization. Kafka handles messaging, Spark Streaming processes data, Elasticsearch stores the information, and Kibana  provide visualization.
 
 ### 🛠 Architecture
 ![Jcdecaux Bike Real-time Data Pipeline](files/Architecture.png)
@@ -67,6 +67,6 @@ The following Docker images are used:
 - **Custom Pipeline**: Defined in \`Dockerfile\`, containing OpenJDK 11, Spark, Kafka, and Elasticsearch dependencies.
 
 ### 📌 Conclusion
-With the setup complete, real-time bike station data should now be visible in Kibana and Streamlit. This project demonstrates the use of a streaming data pipeline for processing and visualizing real-time data using Docker.
+With the setup complete, real-time bike station data should now be visible in Kibana. This project demonstrates the use of a streaming data pipeline for processing and visualizing real-time data using Docker.
 
 
