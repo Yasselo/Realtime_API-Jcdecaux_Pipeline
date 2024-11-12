@@ -2,4 +2,5 @@ kafka-python==2.0.2
 elasticsearch==8.8.2
 requests
 pyspark==3.2.1
-python-dotenv
+pydantic>=2.0
+pydantic-settings>=2.0

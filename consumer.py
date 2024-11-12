@@ -9,8 +9,11 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 # Initialize Elasticsearch
-es = Elasticsearch([{"host": settings.elasticsearch_host, "port": settings.elasticsearch_port}])
-
+es = Elasticsearch([{
+    "scheme": "http",  
+    "host": settings.elasticsearch_host, 
+    "port": settings.elasticsearch_port
+}])
 spark = SparkSession.builder \
     .appName("VelibConsumer") \
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.4,org.elasticsearch:elasticsearch-spark-30_2.12:8.8.2") \
@@ -41,7 +44,9 @@ kafka_df = spark.readStream \
     .option("startingOffsets", "latest") \
     .load()
 
-json_df = kafka_df.selectExpr("CAST(value AS STRING)").select(F.from_json("value", schema).alias("data")).select("data.*")
+json_df = kafka_df.selectExpr("CAST(value AS STRING)")\
+                    .select(F.from_json("value", schema)\
+                    .alias("data")).select("data.*")
 
 logger.info("Writing data to Elasticsearch...")
 es_query = json_df.writeStream \
