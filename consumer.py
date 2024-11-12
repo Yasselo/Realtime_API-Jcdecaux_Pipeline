@@ -1,108 +1,55 @@
-#!/usr/bin/env python3
+# consumer.py
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
+from pyspark.sql import functions as F
 from pyspark.sql.types import *
 from elasticsearch import Elasticsearch
+from config import settings
+from logger import get_logger
 
-# Stop existing Spark session if any
-sessions = SparkSession._instantiatedSession
-if sessions is not None:
-    sessions.stop()
+logger = get_logger(__name__)
 
 # Initialize Elasticsearch
-try:
-    es = Elasticsearch("http://elasticsearch:9200")
-    if not es.ping():
-        print("Failed to connect to Elasticsearch")
-except Exception as e:
-    print(f"Error connecting to Elasticsearch: {e}")
+es = Elasticsearch([{"host": settings.elasticsearch_host, "port": settings.elasticsearch_port}])
 
-
-# Create Spark Session
 spark = SparkSession.builder \
     .appName("VelibConsumer") \
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.4,org.elasticsearch:elasticsearch-spark-30_2.12:8.8.2") \
     .getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-# Define schema of data retrieved from Kafka
 schema = StructType([
-    StructField("numbers", IntegerType(), True),
-    StructField("contract_name", StringType(), True),
-    StructField("banking", StringType(), True),
-    StructField("bike_stands", IntegerType(), True),
-    StructField("available_bike_stands", IntegerType(), True),
-    StructField("available_bikes", IntegerType(), True),
-    StructField("address", StringType(), True),
-    StructField("status", StringType(), True),
+    StructField("numbers", IntegerType()),
+    StructField("contract_name", StringType()),
+    StructField("banking", StringType()),
+    StructField("bike_stands", IntegerType()),
+    StructField("available_bike_stands", IntegerType()),
+    StructField("available_bikes", IntegerType()),
+    StructField("address", StringType()),
+    StructField("status", StringType()),
     StructField("position", StructType([
-        StructField("lat", DoubleType(), True),
-        StructField("lng", DoubleType(), True)
-    ]), True),
-    StructField("last_update", StringType(), True)
+        StructField("lat", DoubleType()),
+        StructField("lng", DoubleType())
+    ])),
+    StructField("last_update", StringType())
 ])
 
-# Step 1: Read Data from Kafka
-print("Attempting to read data from Kafka...")
-try:
-    kafka_df = spark.readStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", "kafka:9092") \
-        .option("subscribe", "stations") \
-        .option("startingOffsets", "latest") \
-        .option("failOnDataLoss", "false") \
-        .load()
-    print("Successfully connected to Kafka")
-except Exception as e:
-    print(f"Error reading from Kafka: {e}")
+logger.info("Reading data from Kafka...")
+kafka_df = spark.readStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", settings.kafka_server) \
+    .option("subscribe", settings.kafka_topic) \
+    .option("startingOffsets", "latest") \
+    .load()
 
-# Debug: Show Kafka schema
-print("Kafka DataFrame Schema:")
-kafka_df.printSchema()
+json_df = kafka_df.selectExpr("CAST(value AS STRING)").select(F.from_json("value", schema).alias("data")).select("data.*")
 
-# Step 2: Extract JSON Data
-print("Extracting JSON data from Kafka messages...")
-json_df = kafka_df.selectExpr("CAST(value AS STRING)") \
-    .select(from_json("value", schema).alias("data")) \
-    .select("data.*")
-
-# Debug: Show parsed JSON schema and a sample
-json_df.printSchema()
-
-# Step 3: Debug Streaming Query (Console Output)
-print("Starting console query to debug data ingestion...")
-console_query = json_df.writeStream \
-    .outputMode("append") \
-    .format("console") \
-    .option("truncate", False) \
+logger.info("Writing data to Elasticsearch...")
+es_query = json_df.writeStream \
+    .format("org.elasticsearch.spark.sql") \
+    .option("es.nodes", settings.elasticsearch_host) \
+    .option("es.port", settings.elasticsearch_port) \
+    .option("es.resource", settings.elasticsearch_index) \
+    .option("checkpointLocation", "/tmp/spark-checkpoint") \
     .start()
 
-# Wait for a few seconds to collect some data
-console_query.awaitTermination(10)
-
-# Step 4: Write to Elasticsearch
-print("Writing data to Elasticsearch...")
-try:
-    es_query = json_df.writeStream \
-        .format("org.elasticsearch.spark.sql") \
-        .outputMode("append") \
-        .option("es.nodes", "elasticsearch") \
-        .option("es.port", "9200") \
-        .option("es.resource", "stations") \
-        .option("es.nodes.wan.only", "false") \
-        .option("checkpointLocation", "/tmp/spark-checkpoint") \
-        .start()
-    print("Elasticsearch streaming started successfully")
-except Exception as e:
-    print(f"Error writing to Elasticsearch: {e}")
-
-# Monitor Elasticsearch stream
-import time
-while es_query.isActive:
-    print("Elasticsearch Stream Progress:")
-    print(es_query.lastProgress)
-    time.sleep(10)
-
-# Keep both streams running
-console_query.awaitTermination()
 es_query.awaitTermination()
