@@ -17,36 +17,6 @@ try:
 except Exception as e:
     print(f"Error connecting to Elasticsearch: {e}")
 
-# Define Elasticsearch mapping
-mapping = {
-    "mappings": {
-        "properties": {
-            "numbers": { "type": "integer" },
-            "contract_name": { "type": "text" },
-            "banking": { "type": "text" },
-            "bike_stands": { "type": "integer" },
-            "available_bike_stands": { "type": "integer" },
-            "available_bikes": { "type": "integer" },
-            "address": { "type": "text" },
-            "status": { "type": "text" },
-            "position": {"type": "geo_point"},
-            "last_update": { "type": "date" }
-        }
-    }
-}
-
-# Create Elasticsearch index if it doesn't exist
-def create_index_station(client, index, mapping):
-    try:
-        if not client.indices.exists(index=index):
-            client.indices.create(index=index, body=mapping)
-            print(f"Index '{index}' created successfully")
-        else:
-            print(f"Index '{index}' already exists")
-    except Exception as e:
-        print(f"Error creating index: {e}")
-
-create_index_station(client=es, index="stations", mapping=mapping)
 
 # Create Spark Session
 spark = SparkSession.builder \

@@ -4,11 +4,16 @@ import requests
 from kafka import KafkaProducer
 from datetime import datetime
 
-# Constants
+import os
+from dotenv import load_dotenv
+
+# Get elements from .env
+load_dotenv()
+
 
 KAFKA_TOPIC = "stations"
 KAFKA_SERVER = 'kafka:9092'
-API_URL = f"https://api.jcdecaux.com/vls/v1/stations?country_code=FR&apiKey={venv.API_KEY}"
+API_URL = f"https://api.jcdecaux.com/vls/v1/stations?country_code=FR&apiKey={os.getenv('API_KEY')}"
 
 # Kafka producer configuration
 producer = KafkaProducer(

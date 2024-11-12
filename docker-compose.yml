@@ -79,6 +79,15 @@ services:
       - bike_network
     command: ["bash", "-c", "exec"]  # Start the pipeline with exec for better signal handling
 
+  create-index:
+    image: python:3.8-slim
+    depends_on:
+      - elasticsearch
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["python", "create_es_index.py"]
+
 networks:
   bike_network:
     driver: bridge
